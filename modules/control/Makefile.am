@@ -9,12 +9,22 @@ libnetsync_plugin_la_LIBADD = $(SOCKET_LIBS)
 liboldrc_plugin_la_SOURCES = control/oldrc.c control/intromsg.h
 liboldrc_plugin_la_LIBADD = $(SOCKET_LIBS) $(LIBM)
 
+if HAVE_NACL
+libppapi_control_plugin_la_SOURCES = control/ppapi/control.cpp
+libppapi_control_plugin_la_CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti
+libppapi_control_plugin_la_LIBADD = -lppapi -lc++
+endif
+
 control_LTLIBRARIES = \
 	libdummy_plugin.la \
 	libgestures_plugin.la \
 	libhotkeys_plugin.la \
 	libnetsync_plugin.la \
 	liboldrc_plugin.la
+
+if HAVE_NACL
+control_LTLIBRARIES += libppapi_control_plugin.la
+endif
 
 liblirc_plugin_la_SOURCES = control/lirc.c
 liblirc_plugin_la_LIBADD = -llirc_client

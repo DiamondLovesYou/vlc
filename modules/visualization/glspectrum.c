@@ -20,9 +20,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 
+#ifndef __native_client__
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
 
 #include <assert.h>
 
@@ -499,3 +502,5 @@ release:
 
     vlc_assert_unreachable();
 }
+
+#endif /* __native_client__ */

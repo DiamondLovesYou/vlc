@@ -48,8 +48,10 @@ patches/*
 
 include/vlc/libvlc_version.h
 
+bin/vlc_ppapi_static_modules_init.h
+bin/vlc_ppapi_static_ldadd.am
+
 # Ignore build dirs
 build*
 contrib-*
 install-*
-

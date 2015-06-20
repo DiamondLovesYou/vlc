@@ -77,6 +77,7 @@ pluginsinclude_HEADERS = \
 	../include/vlc_picture_pool.h \
 	../include/vlc_playlist.h \
 	../include/vlc_plugin.h \
+	../include/vlc_ppapi.h \
 	../include/vlc_probe.h \
 	../include/vlc_rand.h \
 	../include/vlc_services_discovery.h \
@@ -112,6 +113,7 @@ noinst_HEADERS = \
 	../include/vlc_iso_lang.h \
 	../include/vlc_memory.h \
 	../include/vlc_pgpkey.h \
+	../include/vlc_ppapi.h  \
 	../include/vlc_update.h \
 	../include/vlc_vod.h \
 	../include/vlc_vout_wrapper.h \
@@ -177,6 +179,10 @@ endif
 if HAVE_DBUS
 AM_CPPFLAGS += -DHAVE_DBUS
 AM_CFLAGS += $(DBUS_CFLAGS)
+endif
+
+if HAVE_NACL
+libvlccore_la_CFLAGS = -std=gnu11
 endif
 
 libvlccore_la_SOURCES = $(SOURCES_libvlc)
@@ -485,8 +491,11 @@ SOURCES_libvlc_common = \
 	misc/fingerprinter.c \
 	misc/text_style.c \
 	misc/subpicture.c \
-	misc/subpicture.h \
-	$(NULL)
+	misc/subpicture.h
+
+if HAVE_NACL
+SOURCES_libvlc_common += ppapi.c $(NULL)
+endif
 
 SOURCES_libvlc_httpd = \
 	network/httpd.c \

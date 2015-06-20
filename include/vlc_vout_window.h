@@ -53,6 +53,7 @@ enum {
     VOUT_WINDOW_TYPE_NSOBJECT,
     VOUT_WINDOW_TYPE_ANDROID_NATIVE,
     VOUT_WINDOW_TYPE_WAYLAND,
+    VOUT_WINDOW_TYPE_PPAPI,
 };
 
 /**
@@ -108,6 +109,7 @@ struct vout_window_t {
         uint32_t xid;            /* X11 windows ID */
         void     *nsobject;      /* Mac OSX view object */
         void     *anativewindow; /* Android native window. */
+        int32_t  pp_resource;
         struct wl_surface *wl;   /* Wayland surface */
     } handle;
 
@@ -115,6 +117,7 @@ struct vout_window_t {
     union {
         char     *x11; /* X11 display (NULL = use default) */
         struct wl_display *wl;   /* Wayland struct wl_display pointer */
+        int32_t  pp_instance;
     } display;
 
     /* Control on the module (mandatory)

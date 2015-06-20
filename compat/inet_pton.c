@@ -34,6 +34,7 @@
 # define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 
+#ifndef __native_client__
 int inet_pton (int af, const char *src, void *dst)
 {
     unsigned char *b = dst;
@@ -48,7 +49,7 @@ int inet_pton (int af, const char *src, void *dst)
     return -1;
 }
 
-const char *inet_ntop (int af, const void *src, char *dst, int len)
+const char *inet_ntop (int af, const void *src, char *dst, unsigned int len)
 {
     const unsigned char *b = src;
 
@@ -66,3 +67,4 @@ const char *inet_ntop (int af, const void *src, char *dst, int len)
     errno = EAFNOSUPPORT;
     return NULL;
 }
+#endif

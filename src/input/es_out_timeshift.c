@@ -184,6 +184,8 @@ typedef struct
     vlc_mutex_t    lock;
     vlc_cond_t     wait;
 
+    bool b_die;
+
     /* */
     bool           b_paused;
     mtime_t        i_pause_date;
@@ -795,6 +797,7 @@ static int TsStart( es_out_t *p_out )
     p_ts->i_cmd_delay = 0;
     p_ts->p_storage_r = NULL;
     p_ts->p_storage_w = NULL;
+    p_ts->b_die = false;
 
     p_sys->b_delayed = true;
     if( vlc_clone( &p_ts->thread, TsRun, p_ts, VLC_THREAD_PRIORITY_INPUT ) )
@@ -823,8 +826,12 @@ static void TsAutoStop( es_out_t *p_out )
 }
 static void TsStop( ts_thread_t *p_ts )
 {
-    vlc_cancel( p_ts->thread );
+    vlc_mutex_lock( &p_ts->lock );
+    p_ts->b_die = true;
+    vlc_cond_signal( &p_ts->wait );
+    vlc_mutex_unlock( &p_ts->lock );
     vlc_join( p_ts->thread, NULL );
+
 
     vlc_mutex_lock( &p_ts->lock );
     for( ;; )
@@ -979,76 +986,77 @@ static void *TsRun( void *p_data )
     for( ;; )
     {
         ts_cmd_t cmd;
-        mtime_t  i_deadline;
+        mtime_t  i_deadline = 0;
         bool b_buffering;
 
         /* Pop a command to execute */
         vlc_mutex_lock( &p_ts->lock );
         mutex_cleanup_push( &p_ts->lock );
 
-        for( ;; )
+        for( ; !p_ts->b_die; )
         {
-            const int canc = vlc_savecancel();
+            // savecancel
             b_buffering = es_out_GetBuffering( p_ts->p_out );
 
-            if( ( !p_ts->b_paused || b_buffering ) && !TsPopCmdLocked( p_ts, &cmd, false ) )
-            {
-                vlc_restorecancel( canc );
+            if( ( !p_ts->b_paused || b_buffering ) && !TsPopCmdLocked( p_ts, &cmd, false ) ) {
+                // restorecancel
                 break;
             }
-            vlc_restorecancel( canc );
+            // restorecancel
 
             vlc_cond_wait( &p_ts->wait, &p_ts->lock );
         }
-
-        if( b_buffering && i_buffering_date < 0 )
+        if( !p_ts->b_die )
         {
-            i_buffering_date = cmd.i_date;
-        }
-        else if( i_buffering_date > 0 )
-        {
-            p_ts->i_buffering_delay += i_buffering_date - cmd.i_date; /* It is < 0 */
-            if( b_buffering )
-                i_buffering_date = cmd.i_date;
-            else
-                i_buffering_date = -1;
-        }
-
-        if( p_ts->i_rate_date < 0 )
-            p_ts->i_rate_date = cmd.i_date;
-
-        p_ts->i_rate_delay = 0;
-        if( p_ts->i_rate_source != p_ts->i_rate )
-        {
-            const mtime_t i_duration = cmd.i_date - p_ts->i_rate_date;
-            p_ts->i_rate_delay = i_duration * p_ts->i_rate / p_ts->i_rate_source - i_duration;
-        }
-        if( p_ts->i_cmd_delay + p_ts->i_rate_delay + p_ts->i_buffering_delay < 0 && p_ts->i_rate != p_ts->i_rate_source )
-        {
-            const int canc = vlc_savecancel();
-
-            /* Auto reset to rate 1.0 */
-            msg_Warn( p_ts->p_input, "es out timeshift: auto reset rate to %d", p_ts->i_rate_source );
-
-            p_ts->i_cmd_delay = 0;
-            p_ts->i_buffering_delay = 0;
-
-            p_ts->i_rate_delay = 0;
-            p_ts->i_rate_date = -1;
-            p_ts->i_rate = p_ts->i_rate_source;
-
-            if( !es_out_SetRate( p_ts->p_out, p_ts->i_rate_source, p_ts->i_rate ) )
+            if( b_buffering && i_buffering_date < 0 )
             {
-                vlc_value_t val = { .i_int = p_ts->i_rate };
-                /* Warn back input
-                 * FIXME it is perfectly safe BUT it is ugly as it may hide a
-                 * rate change requested by user */
-                input_ControlPush( p_ts->p_input, INPUT_CONTROL_SET_RATE, &val );
+                i_buffering_date = cmd.i_date;
+            }
+            else if( i_buffering_date > 0 )
+            {
+                p_ts->i_buffering_delay += i_buffering_date - cmd.i_date; /* It is < 0 */
+                if( b_buffering )
+                    i_buffering_date = cmd.i_date;
+                else
+                    i_buffering_date = -1;
             }
 
-            vlc_restorecancel( canc );
+            if( p_ts->i_rate_date < 0 )
+                p_ts->i_rate_date = cmd.i_date;
+
+            p_ts->i_rate_delay = 0;
+            if( p_ts->i_rate_source != p_ts->i_rate )
+            {
+                const mtime_t i_duration = cmd.i_date - p_ts->i_rate_date;
+                p_ts->i_rate_delay = i_duration * p_ts->i_rate / p_ts->i_rate_source - i_duration;
+            }
+
+            if( p_ts->i_cmd_delay + p_ts->i_rate_delay + p_ts->i_buffering_delay < 0 && p_ts->i_rate != p_ts->i_rate_source )
+            {
+                // savecancel
+
+                /* Auto reset to rate 1.0 */
+                msg_Warn( p_ts->p_input, "es out timeshift: auto reset rate to %d", p_ts->i_rate_source );
+
+                p_ts->i_cmd_delay = 0;
+                p_ts->i_buffering_delay = 0;
+
+                p_ts->i_rate_delay = 0;
+                p_ts->i_rate_date = -1;
+                p_ts->i_rate = p_ts->i_rate_source;
+
+                if( !es_out_SetRate( p_ts->p_out, p_ts->i_rate_source, p_ts->i_rate ) )
+                {
+                    vlc_value_t val = { .i_int = p_ts->i_rate };
+                    /* Warn back input
+                     * FIXME it is perfectly safe BUT it is ugly as it may hide a
+                     * rate change requested by user */
+                    input_ControlPush( p_ts->p_input, INPUT_CONTROL_SET_RATE, &val );
+                }
+                // restorecancel
+            }
+            i_deadline = cmd.i_date + p_ts->i_cmd_delay + p_ts->i_rate_delay + p_ts->i_buffering_delay;
         }
-        i_deadline = cmd.i_date + p_ts->i_cmd_delay + p_ts->i_rate_delay + p_ts->i_buffering_delay;
 
         vlc_cleanup_pop();
         vlc_mutex_unlock( &p_ts->lock );
@@ -1057,12 +1065,16 @@ static void *TsRun( void *p_data )
          * reading  */
         vlc_cleanup_push( cmd_cleanup_routine, &cmd );
 
-        mwait( i_deadline );
+        if( !p_ts->b_die ) {
+          mwait( i_deadline );
+        }
 
         vlc_cleanup_pop();
 
+        if( p_ts->b_die ) { break; }
+
         /* Execute the command  */
-        const int canc = vlc_savecancel();
+        // savecancel
         switch( cmd.i_type )
         {
         case C_ADD:
@@ -1084,7 +1096,7 @@ static void *TsRun( void *p_data )
             vlc_assert_unreachable();
             break;
         }
-        vlc_restorecancel( canc );
+        // restorecancel
     }
 
     return NULL;

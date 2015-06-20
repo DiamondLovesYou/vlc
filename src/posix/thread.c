@@ -43,6 +43,10 @@
 #include <pthread.h>
 #include <sched.h>
 
+#ifdef __pnacl__
+#include <signal.h>
+#endif
+
 #ifdef __linux__
 # include <sys/syscall.h> /* SYS_gettid */
 #endif
@@ -68,7 +72,8 @@
 #if (_POSIX_TIMERS > 0)
 static unsigned vlc_clock_prec;
 
-# if (_POSIX_MONOTONIC_CLOCK > 0) && (_POSIX_CLOCK_SELECTION > 0)
+# if ((_POSIX_MONOTONIC_CLOCK > 0) && (_POSIX_CLOCK_SELECTION > 0)) || defined(_NACL_POSIX_CLOCK)
+/* NaCl's Newlib supports this, but doesn't define _POSIX_CLOCK_SELECTION */
 /* Compile-time POSIX monotonic clock support */
 #  define vlc_clock_id (CLOCK_MONOTONIC)
 
@@ -296,8 +301,33 @@ void vlc_cond_wait (vlc_cond_t *p_condvar, vlc_mutex_t *p_mutex)
 int vlc_cond_timedwait (vlc_cond_t *p_condvar, vlc_mutex_t *p_mutex,
                         mtime_t deadline)
 {
+#ifndef _NACL_POSIX_CLOCK
     struct timespec ts = mtime_to_ts (deadline);
-    int val = pthread_cond_timedwait (p_condvar, p_mutex, &ts);
+    const int val = pthread_cond_timedwait (p_condvar, p_mutex, &ts);
+#else
+    vlc_clock_setup();
+    /* If the deadline is already elapsed, or within the clock precision,
+     * do not even bother the system timer. */
+    deadline -= vlc_clock_prec;
+    deadline -= mdate();
+
+    /* deadline is now relative */
+
+    if(deadline < 0) {
+      return ETIMEDOUT;
+    }
+
+    /* Create an absolute time from deadline and CLOCK_REALTIME */
+    struct timespec rt;
+    if (unlikely(clock_gettime (CLOCK_REALTIME, &rt) != 0))
+        abort ();
+
+    deadline += (INT64_C(1000000) * rt.tv_sec) + (rt.tv_nsec / 1000);
+
+    struct timespec ts = mtime_to_ts (deadline);
+    const int val = pthread_cond_timedwait_abs(p_condvar, p_mutex, &ts);
+#endif
+
     if (val != ETIMEDOUT)
         VLC_THREAD_ASSERT ("timed-waiting on condition");
     return val;
@@ -419,7 +449,6 @@ void vlc_threads_setup (libvlc_int_t *p_libvlc)
     }
     vlc_mutex_unlock (&lock);
 }
-
 
 static int vlc_clone_attr (vlc_thread_t *th, pthread_attr_t *attr,
                            void *(*entry) (void *), void *data, int priority)
@@ -577,22 +606,29 @@ int vlc_set_priority (vlc_thread_t th, int priority)
     return VLC_SUCCESS;
 }
 
+#ifndef __pnacl__
 void vlc_cancel (vlc_thread_t thread_id)
 {
     pthread_cancel (thread_id);
 }
+#endif
 
 int vlc_savecancel (void)
 {
+#ifndef __pnacl__
     int state;
     int val = pthread_setcancelstate (PTHREAD_CANCEL_DISABLE, &state);
 
     VLC_THREAD_ASSERT ("saving cancellation");
     return state;
+#else
+    return 0;
+#endif
 }
 
 void vlc_restorecancel (int state)
 {
+#ifndef __pnacl__
 #ifndef NDEBUG
     int oldstate, val;
 
@@ -606,11 +642,16 @@ void vlc_restorecancel (int state)
 #else
     pthread_setcancelstate (state, NULL);
 #endif
+#else
+    VLC_UNUSED(state);
+#endif
 }
 
 void vlc_testcancel (void)
 {
+#ifndef __pnacl__
     pthread_testcancel ();
+#endif
 }
 
 void vlc_control_cancel (int cmd, ...)
@@ -652,11 +693,44 @@ void mwait (mtime_t deadline)
     struct timespec ts = mtime_to_ts (deadline);
 
     while (clock_nanosleep (vlc_clock_id, TIMER_ABSTIME, &ts, NULL) == EINTR);
+#elif defined(_NACL_POSIX_CLOCK)
+    vlc_clock_setup();
+    /* If the deadline is already elapsed, or within the clock precision,
+     * do not even bother the system timer. */
+    deadline -= vlc_clock_prec;
 
+    struct timespec ts = mtime_to_ts(deadline);
+
+    struct timespec now;
+    long int nsec;
+    long int sec;
+
+    /* Get the current time for this clock.  */
+    if(likely(clock_gettime(vlc_clock_id, &now) != 0)) {
+      fprintf(stderr, "clock_gettime failed\n");
+      abort();
+    }
+
+
+    /* Compute the difference.  */
+    nsec = ts.tv_nsec - now.tv_nsec;
+    sec = ts.tv_sec - now.tv_sec - (nsec < 0);
+    if(sec < 0)
+      /* The time has already elapsed.  */
+      return;
+
+    now.tv_sec = sec;
+    now.tv_nsec = nsec + (nsec < 0 ? 1000000000 : 0);
+
+    while(nanosleep(&now, NULL) == EINTR);
 #else
-    deadline -= mdate ();
-    if (deadline > 0)
-        msleep (deadline);
+    const mtime_t tnow = mdate();
+    deadline -= tnow;
+    if (deadline > 0) {
+      //printf("waiting %lli...", deadline);
+      msleep (deadline);
+      //printf("done after %lli\n", mdate() - tnow);
+    }
 
 #endif
 }
@@ -671,8 +745,9 @@ void msleep (mtime_t delay)
     while (clock_nanosleep (vlc_clock_id, 0, &ts, &ts) == EINTR);
 
 #else
-    while (nanosleep (&ts, &ts) == -1)
+    while (nanosleep (&ts, &ts) == -1) {
         assert (errno == EINTR);
+    }
 
 #endif
 }
@@ -710,6 +785,8 @@ unsigned vlc_GetCPUCount(void)
     return count ? count : 1;
 #elif defined(_SC_NPROCESSORS_CONF)
     return sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROCESSORS_ONLN)
+    return sysconf(_SC_NPROCESSORS_ONLN);
 #else
 #   warning "vlc_GetCPUCount is not implemented for your platform"
     return 1;

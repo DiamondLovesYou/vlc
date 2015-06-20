@@ -31,6 +31,7 @@
 
 static const char *vlc_strerror_l(int errnum, const char *lname)
 {
+#ifndef __pnacl__
     int saved_errno = errno;
     locale_t loc = newlocale(LC_MESSAGES_MASK, lname, (locale_t)0);
 
@@ -52,6 +53,10 @@ static const char *vlc_strerror_l(int errnum, const char *lname)
 
     freelocale(loc);
     return buf;
+#else
+    VLC_UNUSED(lname);
+    return strerror(errnum);
+#endif
 }
 
 /**

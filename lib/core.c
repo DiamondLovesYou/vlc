@@ -157,6 +157,13 @@ void libvlc_set_app_id(libvlc_instance_t *p_i, const char *id,
     var_SetString(p_libvlc, "app-icon-name", icon ? icon : "");
 }
 
+#ifdef __native_client__
+void libvlc_ppapi_set_instance(libvlc_instance_t *vlc_i, const PP_Instance ppapi_i) {
+  libvlc_int_t *p_libvlc = vlc_i->p_libvlc_int;
+  var_SetInteger(p_libvlc, "ppapi-instance", ppapi_i);
+}
+#endif
+
 const char * libvlc_get_version(void)
 {
     return VERSION_MESSAGE;

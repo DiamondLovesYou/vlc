@@ -48,14 +48,14 @@
 /** **************************************************************************
  * Module access points: stream_filter
  *****************************************************************************/
-int StreamOpen( vlc_object_t* );
-void StreamClose( vlc_object_t* );
+int ZipStreamOpen( vlc_object_t* );
+void ZipStreamClose( vlc_object_t* );
 
 /** **************************************************************************
  * Module access points: access
  *****************************************************************************/
-int AccessOpen( vlc_object_t *p_this );
-void AccessClose( vlc_object_t *p_this );
+int ZipAccessOpen( vlc_object_t *p_this );
+void ZipAccessClose( vlc_object_t *p_this );
 
 /** Common function */
 bool isAllowedChar( char c );

@@ -312,7 +312,18 @@ typedef pthread_rwlock_t vlc_rwlock_t;
 /**
  * Static initializer for (static) read/write lock.
  */
+#ifndef __pnacl__
 #define VLC_STATIC_RWLOCK PTHREAD_RWLOCK_INITIALIZER
+#else
+#define VLC_STATIC_RWLOCK {                  \
+    PTHREAD_MUTEX_INITIALIZER,               \
+    0,                                       \
+    0,                                       \
+    NACL_PTHREAD_ILLEGAL_THREAD_ID,          \
+    PTHREAD_COND_INITIALIZER,                \
+    PTHREAD_COND_INITIALIZER,                \
+}
+#endif
 
 /**
  * Thread-local key handle.
@@ -624,7 +635,16 @@ VLC_API int vlc_clone(vlc_thread_t *th, void *(*entry)(void *), void *data,
  * vlc_join() must be used regardless of a thread being cancelled or not, to
  * avoid leaking resources.
  */
+#ifndef __pnacl__
 VLC_API void vlc_cancel(vlc_thread_t);
+#else
+#define vlc_cancel(thread) do { VLC_UNUSED(thread);                     \
+  printf("vlc_cancel (from %s @ `%s:%d`) called!\n",                    \
+         __func__, __FILE__, __LINE__);                                 \
+  printf("This function isn't supported on PNaCl.\n");                  \
+  abort();                                                              \
+} while(false)
+#endif
 
 /**
  * Waits for a thread to complete (if needed), then destroys it.

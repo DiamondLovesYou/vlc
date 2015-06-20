@@ -92,7 +92,7 @@ static char *unescapeXml( const char *psz_text )
 /** **************************************************************************
  * \brief Open access
  *****************************************************************************/
-int AccessOpen( vlc_object_t *p_this )
+int ZipAccessOpen( vlc_object_t *p_this )
 {
     access_t     *p_access = (access_t*)p_this;
     access_sys_t *p_sys;
@@ -203,7 +203,7 @@ exit:
 /** **************************************************************************
  * \brief Close access: free structures
  *****************************************************************************/
-void AccessClose( vlc_object_t *p_this )
+void ZipAccessClose( vlc_object_t *p_this )
 {
     access_t     *p_access = (access_t*)p_this;
     access_sys_t *p_sys = p_access->p_sys;

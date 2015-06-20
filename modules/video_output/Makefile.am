@@ -31,6 +31,23 @@ if HAVE_TVOS
 vout_LTLIBRARIES += libvout_ios2_plugin.la
 endif
 
+if HAVE_NACL
+libppapi_vout_window_plugin_la_SOURCES = video_output/ppapi/ppapi-vout-window.c
+libppapi_vout_window_plugin_la_CFLAGS = $(AM_CFLAGS) $(GL_CFLAGS)
+libppapi_vout_window_plugin_la_LIBADD = $(AM_LIBADD) $(GL_LIBS)
+vout_LTLIBRARIES += libppapi_vout_window_plugin.la
+
+libppapi_vout_graphics3d_plugin_la_SOURCES = video_output/ppapi/ppapi-vout-graphics3d.c
+libppapi_vout_graphics3d_plugin_la_CFLAGS = $(AM_CFLAGS) $(GL_CFLAGS) -DUSE_OPENGL_ES=2
+libppapi_vout_graphics3d_plugin_la_LIBADD = $(AM_LIBADD) $(GL_LIBS) -lppapi_gles2
+vout_LTLIBRARIES += libppapi_vout_graphics3d_plugin.la
+
+libppapi_vout_gl_plugin_la_SOURCES = video_output/ppapi/ppapi-vout-gl.c
+libppapi_vout_gl_plugin_la_CFLAGS = $(AM_CFLAGS) $(GL_CFLAGS) -DUSE_OPENGL_ES=2
+libppapi_vout_gl_plugin_la_LIBADD = $(AM_LIBADD) $(GL_LIBS) -lppapi_gles2
+vout_LTLIBRARIES += libppapi_vout_gl_plugin.la
+endif
+
 ### OpenGL ###
 # TODO: merge all three source files (?)
 libgles2_plugin_la_SOURCES = video_output/opengl.c video_output/opengl.h \
@@ -38,6 +55,10 @@ libgles2_plugin_la_SOURCES = video_output/opengl.c video_output/opengl.h \
 libgles2_plugin_la_CFLAGS = $(AM_CFLAGS) $(GLES2_CFLAGS) -DUSE_OPENGL_ES=2
 libgles2_plugin_la_LIBADD = $(GLES2_LIBS)
 libgles2_plugin_la_LDFLAGS = $(AM_LDFLAGS) -rpath '$(voutdir)'
+
+if HAVE_NACL
+libgles2_plugin_la_LIBADD += -lppapi_gles2
+endif
 
 libgles1_plugin_la_SOURCES = video_output/opengl.c video_output/opengl.h \
 	video_output/gl.c

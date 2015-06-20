@@ -599,6 +599,9 @@ libvlc_media_player_new( libvlc_instance_t *instance )
 #ifdef HAVE_EVAS
     var_Create (mp, "drawable-evasobject", VLC_VAR_ADDRESS);
 #endif
+#ifdef __native_client__
+    var_Create (mp, "ppapi-instance", VLC_VAR_INTEGER);
+#endif
 
     var_Create (mp, "keyboard-events", VLC_VAR_BOOL);
     var_SetBool (mp, "keyboard-events", true);
@@ -1205,6 +1208,20 @@ int libvlc_media_player_set_evas_object( libvlc_media_player_t *p_mi,
     return -1;
 #endif
 }
+
+#ifdef __native_client__
+PP_Instance libvlc_media_player_get_ppapi_instance(libvlc_media_player_t *p_mi) {
+  assert(p_mi != NULL);
+
+  return (PP_Instance)var_GetInteger(p_mi, "ppapi-instance");
+}
+void libvlc_media_player_set_ppapi_instance_for_g3d(libvlc_media_player_t *p_mi,
+                                                    PP_Instance instance) {
+  assert(p_mi != NULL);
+  var_SetString(p_mi, "vout", "ppapi_vout_graphics3d");
+  var_SetInteger(p_mi, "ppapi-instance", instance);
+}
+#endif
 
 void libvlc_audio_set_callbacks( libvlc_media_player_t *mp,
                                  libvlc_audio_play_cb play_cb,

@@ -158,7 +158,7 @@ static input_item_t *Browse(stream_t *p_stream)
     return p_item;
 }
 
-int StreamOpen(vlc_object_t *p_object)
+int ArchiveStreamOpen(vlc_object_t *p_object)
 {
     stream_t *p_stream = (stream_t*) p_object;
     stream_sys_t *p_sys;
@@ -177,7 +177,7 @@ int StreamOpen(vlc_object_t *p_object)
     {
         msg_Err(p_stream, "can't create libarchive instance: %s",
                 archive_error_string(p_sys->p_archive));
-        StreamClose(p_object);
+        ArchiveStreamClose(p_object);
         return VLC_EGENERIC;
     }
 
@@ -192,7 +192,7 @@ int StreamOpen(vlc_object_t *p_object)
     {
         msg_Err(p_stream, "can't open archive: %s",
                 archive_error_string(p_sys->p_archive));
-        StreamClose(p_object);
+        ArchiveStreamClose(p_object);
         return VLC_EGENERIC;
     }
 
@@ -204,7 +204,7 @@ int StreamOpen(vlc_object_t *p_object)
     return VLC_SUCCESS;
 }
 
-void StreamClose(vlc_object_t *object)
+void ArchiveStreamClose(vlc_object_t *object)
 {
     stream_t *p_stream = (stream_t*)object;
     stream_sys_t *p_sys = p_stream->p_sys;

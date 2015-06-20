@@ -69,6 +69,10 @@ static access_t *access_New(vlc_object_t *parent, input_thread_t *input,
     if (unlikely(access == NULL))
         return NULL;
 
+#ifdef __native_client__
+    var_InheritInteger(p_access, "ppapi-instance");
+#endif
+
     access->p_input = input;
     access->psz_access = NULL;
     access->psz_url = strdup(mrl);

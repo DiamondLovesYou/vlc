@@ -79,7 +79,13 @@ dnl Check for compiler properties
 AC_C_CONST
 AC_C_INLINE
 AC_C_RESTRICT
-AX_CXX_COMPILE_STDCXX_11(noext, optional)
+
+dnl -std=gnu++11
+AX_CXX_COMPILE_STDCXX_11(ext, optional)
+dnl -std=c++11
+AS_IF([test "${ax_cv_cxx_compile_cxx11}" = "no"], [], [
+     AX_CXX_COMPILE_STDCXX_11(noext, optional)
+])
 
 dnl Extend the --help string at the current spot.
 AC_DEFUN([EXTEND_HELP_STRING], [m4_divert_once([HELP_ENABLE], [$1])])
@@ -304,6 +310,7 @@ AM_CONDITIONAL(HAVE_WIN64,   test "${HAVE_WIN64}" = "1")
 AM_CONDITIONAL(HAVE_IOS,     test "${HAVE_IOS}" = "1")
 AM_CONDITIONAL(HAVE_OSX,     test "${HAVE_OSX}" = "1")
 AM_CONDITIONAL(HAVE_TVOS,    test "${HAVE_TVOS}" = "1")
+AM_CONDITIONAL(HAVE_NACL,    test "${SYS}" = "nacl")
 
 dnl
 dnl Sadly autoconf does not think about testing foo.exe when ask to test
@@ -446,7 +453,7 @@ DOLT
 
 lt_cv_deplibs_check_method=pass_all
 
-AS_IF([test "${enable_shared}" = "no" -a "${enable_vlc}" != "no"], [
+AS_IF([test "${enable_shared}" = "no" -a "${enable_vlc}" != "no" -a "${SYS}" != "nacl"], [
   AC_MSG_ERROR([VLC is based on plugins. Shared libraries cannot be disabled.])
 ])
 

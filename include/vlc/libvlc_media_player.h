@@ -542,6 +542,13 @@ LIBVLC_API void libvlc_media_player_set_hwnd ( libvlc_media_player_t *p_mi, void
  */
 LIBVLC_API void *libvlc_media_player_get_hwnd ( libvlc_media_player_t *p_mi );
 
+#ifdef __native_client__
+#include <vlc_ppapi.h>
+LIBVLC_API PP_Instance libvlc_media_player_get_ppapi_instance(libvlc_media_player_t *p_mi);
+LIBVLC_API void libvlc_media_player_set_ppapi_instance_for_g3d(libvlc_media_player_t *p_mi,
+                                                               PP_Instance instance);
+#endif
+
 /**
  * Set the android context.
  *

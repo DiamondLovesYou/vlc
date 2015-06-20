@@ -296,6 +296,12 @@ $Id$
  * podcast: podcast feed parser
  * posterize: posterize video filter
  * postproc: Video post processing filter
+ * ppapi_access: PPAPI HTML/HTTP CORS filtered remote file access.
+ * ppapi_aout: Audio output via PPB_Audio.
+ * ppapi_control: Control VLC via Javascript.
+ * ppapi_vout_graphics3d:
+ * ppapi_vout_gl:
+ * ppapi_vout_window:
  * prefetch: Stream prefetching stream filter
  * projectm: visualisation using libprojectM
  * ps: input module for MPEG PS decapsulation

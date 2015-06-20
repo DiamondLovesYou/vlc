@@ -41,13 +41,13 @@ vlc_module_begin()
     set_subcategory( SUBCAT_INPUT_STREAM_FILTER )
     set_description( N_( "Zip files filter" ) )
     set_capability( "stream_filter", 15 )
-    set_callbacks( StreamOpen, StreamClose )
+    set_callbacks( ZipStreamOpen, ZipStreamClose )
     add_submodule()
         set_subcategory( SUBCAT_INPUT_ACCESS )
         set_description( N_( "Zip access" ) )
         set_capability( "access", 0 )
         add_shortcut( "unzip", "zip" )
-        set_callbacks( AccessOpen, AccessClose )
+        set_callbacks( ZipAccessOpen, ZipAccessClose )
 vlc_module_end()
 
 /** *************************************************************************
@@ -167,7 +167,7 @@ static const int i_zip_marker = 4;
 /** **************************************************************************
  * Open
  *****************************************************************************/
-int StreamOpen( vlc_object_t *p_this )
+int ZipStreamOpen( vlc_object_t *p_this )
 {
     stream_t *s = (stream_t*) p_this;
     stream_sys_t *p_sys;
@@ -233,7 +233,7 @@ error:
 /** *************************************************************************
  * Close
  ****************************************************************************/
-void StreamClose( vlc_object_t *p_this )
+void ZipStreamClose( vlc_object_t *p_this )
 {
     stream_t *s = (stream_t*)p_this;
     stream_sys_t *p_sys = s->p_sys;
@@ -842,4 +842,3 @@ static int ZCALLBACK ZipIO_Error( void* opaque, void* stream )
     (void)stream;
     return 0;
 }
-

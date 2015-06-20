@@ -303,7 +303,7 @@ static int Control(access_t *p_access, int i_query, va_list args)
     return VLC_SUCCESS;
 }
 
-int AccessOpen(vlc_object_t *p_object)
+int ArchiveAccessOpen(vlc_object_t *p_object)
 {
     access_t *p_access = (access_t*)p_object;
     const char *sep = strchr(p_access->psz_location, ARCHIVE_SEP_CHAR);
@@ -357,7 +357,7 @@ int AccessOpen(vlc_object_t *p_object)
             free(ppsz_files[i]);
         free(ppsz_files);
         free(psz_base);
-        AccessClose(p_object);
+        ArchiveAccessClose(p_object);
         return VLC_ENOMEM;
     }
 
@@ -380,7 +380,7 @@ int AccessOpen(vlc_object_t *p_object)
     {
         msg_Err(p_access, "can't open archive: %s",
                 archive_error_string(p_sys->p_archive));
-        AccessClose(p_object);
+        ArchiveAccessClose(p_object);
         return VLC_EGENERIC;
     }
 
@@ -418,11 +418,11 @@ int AccessOpen(vlc_object_t *p_object)
     return VLC_SUCCESS;
 
 error:
-    AccessClose(p_object);
+    ArchiveAccessClose(p_object);
     return VLC_EGENERIC;
 }
 
-void AccessClose(vlc_object_t *p_object)
+void ArchiveAccessClose(vlc_object_t *p_object)
 {
     access_t *p_access = (access_t*)p_object;
     access_sys_t *p_sys = p_access->p_sys;

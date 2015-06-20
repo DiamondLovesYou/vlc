@@ -20,6 +20,10 @@ if HAVE_DBUS
 AM_CPPFLAGS += -DHAVE_DBUS
 endif
 
+if HAVE_NACL
+vlc_SOURCES = ppapi.c
+else
+
 if !HAVE_WIN32
 if !HAVE_OS2
 bin_PROGRAMS += vlc-wrapper
@@ -27,7 +31,9 @@ endif
 vlc_SOURCES = vlc.c override.c
 endif
 
+endif
 EXTRA_vlc_SOURCES = vlc.c winvlc.c
+
 if HAVE_WIN32
 vlc_SOURCES = winvlc.c
 noinst_DATA += vlc_win32_rc.rc
@@ -51,7 +57,19 @@ vlc_wrapper_SOURCES = rootwrap.c
 vlc_wrapper_LDADD = $(SOCKET_LIBS)
 
 vlc_LDFLAGS = $(LDFLAGS_vlc)
-vlc_LDADD = ../lib/libvlc.la $(LIBPTHREAD)
+vlc_LDADD = ../lib/libvlc.la ../src/libvlccore.la $(LIBPTHREAD)
+
+if HAVE_NACL
+# PNaCl is completely static (for better or worse), so we must get the modules
+# linked into the program.
+# NOTE this requires two separate invocations of make to work. The first one
+# builds the modules, then, after running `gen_static_modules.sh` in this
+# directory, a second run of make will build the vlc bin.
+include vlc_ppapi_static_ldadd.am
+
+vlc_LDADD += -lppapi_stub -lppapi_gles2 -lnacl -lpthread -lc
+
+endif
 
 vlc_static_SOURCES = $(vlc_SOURCES)
 vlc_static_CFLAGS = $(AM_CFLAGS) \

@@ -46,16 +46,21 @@ audio_filter_LTLIBRARIES = \
 # Channel mixers
 libdolby_surround_decoder_plugin_la_SOURCES = \
 	audio_filter/channel_mixer/dolby.c
+libdolby_surround_decoder_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libheadphone_channel_mixer_plugin_la_SOURCES = \
 	audio_filter/channel_mixer/headphone.c
+libheadphone_channel_mixer_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libheadphone_channel_mixer_plugin_la_LIBADD = $(LIBM)
 libmono_plugin_la_SOURCES = audio_filter/channel_mixer/mono.c
+libmono_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libmono_plugin_la_LIBADD = $(LIBM)
 libremap_plugin_la_SOURCES = audio_filter/channel_mixer/remap.c
 libtrivial_channel_mixer_plugin_la_SOURCES = \
 	audio_filter/channel_mixer/trivial.c
+libtrivial_channel_mixer_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsimple_channel_mixer_plugin_la_SOURCES = \
 	audio_filter/channel_mixer/simple.c
+libsimple_channel_mixer_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsimple_channel_mixer_plugin_la_CFLAGS =
 libsimple_channel_mixer_plugin_la_LIBADD =
 
@@ -111,6 +116,7 @@ libbandlimited_resampler_plugin_la_SOURCES = \
 	audio_filter/resampler/bandlimited.c \
 	audio_filter/resampler/bandlimited.h
 libugly_resampler_plugin_la_SOURCES = audio_filter/resampler/ugly.c
+libugly_resampler_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 libsamplerate_plugin_la_SOURCES = audio_filter/resampler/src.c
 libsamplerate_plugin_la_CPPFLAGS = $(AM_CPPFLAGS) $(SAMPLERATE_CFLAGS)
 libsamplerate_plugin_la_LDFLAGS = $(AM_LDFLAGS) -rpath '$(audio_filterdir)'

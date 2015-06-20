@@ -283,6 +283,10 @@ static input_thread_t *Create( vlc_object_t *p_parent, input_item_t *p_item,
     if( p_input == NULL )
         return NULL;
 
+#ifdef __native_client___
+    var_InheritInteger(p_input, "ppapi-instance");
+#endif
+
     /* Construct a nice name for the input timer */
     char psz_timer_name[255];
     char * psz_name = input_item_GetName( p_item );

@@ -32,7 +32,10 @@
 #include "modules/modules.h"
 
 #include <sys/types.h>
+
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
 
 #ifdef HAVE_VALGRIND_VALGRIND_H
 # include <valgrind/valgrind.h>
@@ -49,6 +52,7 @@
 int module_Load (vlc_object_t *p_this, const char *path,
                  module_handle_t *p_handle, bool lazy)
 {
+#ifdef HAVE_DLFCN_H
 #if defined (RTLD_NOW)
     const int flags = lazy ? RTLD_LAZY : RTLD_NOW;
 #elif defined (DL_LAZY)
@@ -65,6 +69,14 @@ int module_Load (vlc_object_t *p_this, const char *path,
     }
     *p_handle = handle;
     return 0;
+#else
+    msg_Warn( p_this,
+              "cannot load module `%s' (platform doesn't support dlfcn)",
+              path);
+    VLC_UNUSED(p_handle);
+    VLC_UNUSED(lazy);
+    return -1;
+#endif
 }
 
 /**
@@ -78,7 +90,7 @@ int module_Load (vlc_object_t *p_this, const char *path,
  */
 void module_Unload( module_handle_t handle )
 {
-#if !defined(__SANITIZE_ADDRESS__)
+#if defined(HAVE_DLFCN_H) && !defined(__SANITIZE_ADDRESS__)
 #ifdef HAVE_VALGRIND_VALGRIND_H
     if( RUNNING_ON_VALGRIND > 0 )
         return; /* do not dlclose() so that we get proper stack traces */
@@ -102,5 +114,11 @@ void module_Unload( module_handle_t handle )
  */
 void *module_Lookup( module_handle_t handle, const char *psz_function )
 {
+#ifdef HAVE_DLFCN_H
     return dlsym( handle, psz_function );
+#else
+    VLC_UNUSED(handle);
+    VLC_UNUSED(psz_function);
+    return NULL;
+#endif
 }

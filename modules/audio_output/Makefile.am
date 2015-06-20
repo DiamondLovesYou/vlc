@@ -1,6 +1,12 @@
 aoutdir = $(pluginsdir)/audio_output
 aout_LTLIBRARIES =
 
+if HAVE_NACL
+libppapi_aout_plugin_la_SOURCES = audio_output/ppapi-aout.c
+libppapi_aout_plugin_la_LIBADD = -lppapi
+aout_LTLIBRARIES += libppapi_aout_plugin.la
+endif
+
 libopensles_android_plugin_la_SOURCES = audio_output/opensles_android.c
 libopensles_android_plugin_la_LIBADD = $(LIBDL) $(LIBM)
 

@@ -115,6 +115,8 @@ struct decoder_owner_sys_t
     atomic_bool drained;
     bool b_idle;
 
+    atomic_bool b_die;
+
     /* CC */
     struct
     {
@@ -1430,7 +1432,6 @@ static void *DecoderThread( void *p_data )
         if( p_owner->flushing )
         {   /* Flush before/regardless of pause. We do not want to resume just
              * for the sake of flushing (glitches could otherwise happen). */
-            int canc = vlc_savecancel();
 
             vlc_fifo_Unlock( p_owner->p_fifo );
 
@@ -1438,7 +1439,11 @@ static void *DecoderThread( void *p_data )
             DecoderProcessFlush( p_dec );
 
             vlc_fifo_Lock( p_owner->p_fifo );
-            vlc_restorecancel( canc );
+
+            if( unlikely(atomic_load(&p_owner->b_die)) ) {
+                vlc_fifo_Unlock( p_owner->p_fifo );
+                return NULL;
+            }
 
             /* Reset flushing after DecoderProcess in case input_DecoderFlush
              * is called again. This will avoid a second useless flush (but
@@ -1450,7 +1455,6 @@ static void *DecoderThread( void *p_data )
 
         if( paused != p_owner->paused )
         {   /* Update playing/paused status of the output */
-            int canc = vlc_savecancel();
             mtime_t date = p_owner->pause_date;
 
             paused = p_owner->paused;
@@ -1463,8 +1467,11 @@ static void *DecoderThread( void *p_data )
             if( p_owner->p_aout != NULL )
                 aout_DecChangePause( p_owner->p_aout, paused, date );
 
-            vlc_restorecancel( canc );
             vlc_fifo_Lock( p_owner->p_fifo );
+            if( unlikely(atomic_load(&p_owner->b_die)) ) {
+                vlc_fifo_Unlock( p_owner->p_fifo );
+                return NULL;
+            }
             continue;
         }
 
@@ -1473,11 +1480,19 @@ static void *DecoderThread( void *p_data )
             p_owner->b_idle = true;
             vlc_fifo_Wait( p_owner->p_fifo );
             p_owner->b_idle = false;
+
+            if( unlikely(p_owner->b_die) ) {
+                return NULL;
+            }
+
             continue;
         }
 
         vlc_cond_signal( &p_owner->wait_fifo );
-        vlc_testcancel(); /* forced expedited cancellation in case of stop */
+        if( unlikely(atomic_load(&p_owner->b_die)) ) {
+            /* forced expedited cancellation in case of stop */
+            return NULL;
+        }
 
         block_t *p_block = vlc_fifo_DequeueUnlocked( p_owner->p_fifo );
         if( p_block == NULL )
@@ -1496,7 +1511,10 @@ static void *DecoderThread( void *p_data )
 
         vlc_fifo_Unlock( p_owner->p_fifo );
 
-        int canc = vlc_savecancel();
+        if( unlikely(atomic_load(&p_owner->b_die)) ) {
+            return NULL;
+        }
+
         DecoderProcess( p_dec, p_block );
 
         if( p_block == NULL )
@@ -1505,7 +1523,6 @@ static void *DecoderThread( void *p_data )
             if( p_owner->p_aout != NULL )
                 aout_DecFlush( p_owner->p_aout, true );
         }
-        vlc_restorecancel( canc );
 
         /* Given that the drained flag is only polled, an atomic variable is
          * sufficient. TODO? Wait for draining instead of polling. */
@@ -1513,6 +1530,10 @@ static void *DecoderThread( void *p_data )
 
         vlc_mutex_lock( &p_owner->lock );
         vlc_fifo_Lock( p_owner->p_fifo );
+        if( unlikely(atomic_load(&p_owner->b_die)) ) {
+            vlc_fifo_Unlock( p_owner->p_fifo );
+            return NULL;
+        }
         vlc_cond_signal( &p_owner->wait_acknowledge );
         vlc_mutex_unlock( &p_owner->lock );
     }
@@ -1571,6 +1592,7 @@ static decoder_t * CreateDecoder( vlc_object_t *p_parent,
     p_owner->b_waiting = false;
     p_owner->b_first = true;
     p_owner->b_has_data = false;
+    p_owner->b_die = false;
 
     p_owner->flushing = false;
     p_owner->b_draining = false;
@@ -1852,8 +1874,6 @@ void input_DecoderDelete( decoder_t *p_dec )
 {
     decoder_owner_sys_t *p_owner = p_dec->p_owner;
 
-    vlc_cancel( p_owner->thread );
-
     vlc_fifo_Lock( p_owner->p_fifo );
     /* Signal DecoderTimedWait */
     p_owner->flushing = true;
@@ -1875,6 +1895,12 @@ void input_DecoderDelete( decoder_t *p_dec )
     if( p_owner->p_vout != NULL )
         vout_Cancel( p_owner->p_vout, true );
     vlc_mutex_unlock( &p_owner->lock );
+
+    // if the decoder thread is waiting for input, wake it up.
+    atomic_store(&p_owner->b_die, true);
+    vlc_fifo_Lock( p_owner->p_fifo );
+    vlc_fifo_Signal( p_owner->p_fifo );
+    vlc_fifo_Unlock( p_owner->p_fifo );
 
     vlc_join( p_owner->thread, NULL );
 

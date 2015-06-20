@@ -24,11 +24,11 @@
 
 #include <vlc_common.h>
 
-int AccessOpen(vlc_object_t *object);
-void AccessClose(vlc_object_t *object);
+int ArchiveAccessOpen(vlc_object_t *object);
+void ArchiveAccessClose(vlc_object_t *object);
 
-int StreamOpen(vlc_object_t *object);
-void StreamClose(vlc_object_t *object);
+int ArchiveStreamOpen(vlc_object_t *object);
+void ArchiveStreamClose(vlc_object_t *object);
 
 bool ProbeArchiveFormat(stream_t *p_stream);
 

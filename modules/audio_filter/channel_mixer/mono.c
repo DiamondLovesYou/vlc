@@ -24,6 +24,11 @@
 /*****************************************************************************
  * Preamble
  *****************************************************************************/
+
+#ifdef __pnacl__
+# warning this module causes a bug in clang; disabling.
+#else
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -622,3 +627,5 @@ static unsigned int stereo_to_mono( filter_t *p_filter,
     }
     return n;
 }
+
+#endif // __pnacl__

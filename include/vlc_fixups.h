@@ -263,7 +263,7 @@ int posix_memalign (void **, size_t, size_t);
 #endif
 
 /* locale.h */
-#ifndef HAVE_USELOCALE
+#if !defined(HAVE_USELOCALE) && !(defined(__cplusplus) && defined(__pnacl__))
 #define LC_ALL_MASK      0
 #define LC_NUMERIC_MASK  0
 #define LC_MESSAGES_MASK 0
@@ -315,7 +315,7 @@ void swab (const void *, void *, ssize_t);
 /* Socket stuff */
 #ifndef HAVE_INET_PTON
 int inet_pton(int, const char *, void *);
-const char *inet_ntop(int, const void *, char *, int);
+const char *inet_ntop(int, const void *, char *, unsigned int);
 #endif
 
 #ifndef HAVE_STRUCT_POLLFD

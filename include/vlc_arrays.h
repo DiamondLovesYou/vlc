@@ -25,6 +25,8 @@
 #ifndef VLC_ARRAYS_H_
 #define VLC_ARRAYS_H_
 
+#include <string.h>
+
 /**
  * \file
  * This file defines functions, structures and macros for handling arrays in vlc
@@ -218,6 +220,8 @@ static inline void *realloc_down( void *ptr, size_t size )
     (array).i_size = 0;                                                     \
     (array).p_elems = NULL;                                                 \
   } while(0)
+
+#define ARRAY_STATIC_INIT { 0, 0, NULL }
 
 #define ARRAY_RESET(array)                                                  \
   do {                                                                      \

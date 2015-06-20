@@ -250,6 +250,16 @@ LIBVLC_API
 void libvlc_set_app_id( libvlc_instance_t *p_instance, const char *id,
                         const char *version, const char *icon );
 
+#ifdef __native_client__
+# include <vlc_common.h>
+# include <vlc_ppapi.h>
+/**
+ * Set the PPAPI instance for the VLC instance.
+ */
+LIBVLC_API
+void libvlc_ppapi_set_instance(libvlc_instance_t *vlc_instance, const PP_Instance ppapi_instance);
+#endif
+
 /**
  * Retrieve libvlc version.
  *

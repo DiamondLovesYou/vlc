@@ -10,8 +10,12 @@ libadjust_plugin_la_LIBADD = $(LIBM)
 libalphamask_plugin_la_SOURCES = video_filter/alphamask.c
 libanaglyph_plugin_la_SOURCES = video_filter/anaglyph.c
 libantiflicker_plugin_la_SOURCES = video_filter/antiflicker.c
+
+if !HAVE_NACL # TODO remove once toolchain gets fixed
 libball_plugin_la_SOURCES = video_filter/ball.c
 libball_plugin_la_LIBADD = $(LIBM)
+endif
+
 libblendbench_plugin_la_SOURCES = video_filter/blendbench.c
 libbluescreen_plugin_la_SOURCES = video_filter/bluescreen.c
 libcanvas_plugin_la_SOURCES = video_filter/canvas.c

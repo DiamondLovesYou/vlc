@@ -170,6 +170,7 @@ int vlc_rename (const char *oldpath, const char *newpath)
 
 char *vlc_getcwd (void)
 {
+#ifndef __pnacl__
     long path_max = pathconf (".", _PC_PATH_MAX);
     size_t size = (path_max == -1 || path_max > 4096) ? 4096 : path_max;
 
@@ -186,7 +187,8 @@ char *vlc_getcwd (void)
         if (errno != ERANGE)
             break;
     }
-    return NULL;
+#endif
+    return strdup("/");
 }
 
 int vlc_dup (int oldfd)

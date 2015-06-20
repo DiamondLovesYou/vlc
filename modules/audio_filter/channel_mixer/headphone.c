@@ -26,6 +26,10 @@
  * Preamble
  *****************************************************************************/
 
+#ifdef __pnacl__
+# warning this module causes a bug in clang; disabling.
+#else
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -528,3 +532,5 @@ static block_t *Convert( filter_t *p_filter, block_t *p_block )
     block_Release( p_block );
     return p_out;
 }
+
+#endif // __pnacl__

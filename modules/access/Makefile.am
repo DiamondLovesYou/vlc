@@ -24,6 +24,9 @@ libfilesystem_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 if HAVE_WIN32
 libfilesystem_plugin_la_LIBADD = -lshlwapi
 endif
+if HAVE_NACL
+libfilesystem_plugin_la_LIBADD = -lnacl_io -lc++
+endif
 access_LTLIBRARIES += libfilesystem_plugin.la
 
 libidummy_plugin_la_SOURCES = access/idummy.c
@@ -31,9 +34,11 @@ access_LTLIBRARIES += libidummy_plugin.la
 
 libimem_plugin_la_SOURCES = access/imem-access.c
 libimem_plugin_la_LIBADD = $(LIBM)
+libimem_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 access_LTLIBRARIES += libimem_plugin.la
 
 libaccess_imem_plugin_la_SOURCES = access/imem.c
+libaccess_imem_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 access_LTLIBRARIES += libaccess_imem_plugin.la
 
 librar_plugin_la_SOURCES = access/rar/rar.c access/rar/rar.h \
@@ -300,6 +305,7 @@ access_LTLIBRARIES += $(LTLIBlibbluray)
 EXTRA_LTLIBRARIES += liblibbluray_plugin.la
 
 libaccess_bd_plugin_la_SOURCES = access/bd/bd.c access/bd/mpls.c access/bd/mpls.h access/bd/clpi.c access/bd/clpi.h
+libaccess_bd_plugin_la_CPPFLAGS = $(AM_CPPFLAGS)
 access_LTLIBRARIES += libaccess_bd_plugin.la
 
 
@@ -360,7 +366,7 @@ EXTRA_LTLIBRARIES += libaccess_eyetv_plugin.la
 
 
 ### Network streams ###
-
+if !HAVE_NACL
 libftp_plugin_la_SOURCES = access/ftp.c
 libftp_plugin_la_LIBADD = $(SOCKET_LIBS)
 access_LTLIBRARIES += libftp_plugin.la
@@ -368,6 +374,12 @@ access_LTLIBRARIES += libftp_plugin.la
 libhttp_plugin_la_SOURCES = access/http.c
 libhttp_plugin_la_LIBADD = $(SOCKET_LIBS)
 access_LTLIBRARIES += libhttp_plugin.la
+else
+libppapi_access_plugin_la_SOURCES = access/ppapi-access.cpp
+libppapi_access_plugin_la_CXXFLAGS = -std=gnu++11 -fno-exceptions -fno-rtti
+libppapi_access_plugin_la_LIBADD = -lppapi -lc++
+access_LTLIBRARIES += libppapi_access_plugin.la
+endif
 
 liblive555_plugin_la_SOURCES = access/live555.cpp access/mms/asf.c access/mms/buffer.c
 liblive555_plugin_la_CXXFLAGS = $(AM_CXXFLAGS) $(CXXFLAGS_live555)
